@@ -46,7 +46,7 @@ const imgArray = [
 
 // load cubemap
 var cubeLoader = new THREE.CubeTextureLoader();
-cubeLoader.setPath('textures-4/');
+cubeLoader.setPath('textures/');
 var textureCube = cubeLoader.load(imgArray);
 
 
