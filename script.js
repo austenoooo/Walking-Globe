@@ -11,6 +11,7 @@ let camera_look = {
   y: view_length,
   z: 0,
 };
+
 let currentAngle = 0;
 let rotateSpeed = Math.PI / 1200;
 
@@ -22,10 +23,11 @@ let camera = new THREE.PerspectiveCamera(
   1000
 );
 
-// for debug
+
 camera.position.set(300, 300, 300);
 camera.lookAt(0, 0, 0);
 
+// for debug
 // camera.position.set(camera_pos.x, camera_pos.y, camera_pos.z);
 // camera.lookAt(camera_look.x, camera_look.y, camera_look.z);
 
@@ -34,6 +36,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 
+// load environment map & sky box
 
 const imgArray = [
   "px.png",
@@ -50,35 +53,37 @@ cubeLoader.setPath('textures/');
 var textureCube = cubeLoader.load(imgArray);
 
 
+// create material
+let materialReflective = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0,
+    metalness: 1,
+    envMap: textureCube,
+  });
+
+
+// create ground
 let ground = new THREE.SphereGeometry(ground_radius, 64, 32);
-let materialOne = new THREE.MeshStandardMaterial({
-  color: 0xffffff,
-  roughness: 0,
-  metalness: 1,
-  envMap: textureCube,
-});
-let groundMesh = new THREE.Mesh(ground, materialOne);
+let groundMesh = new THREE.Mesh(ground, materialReflective);
 scene.add(groundMesh);
 groundMesh.position.set(0, 0, 0);
 
-// randomly generate 100 buildings
+// create buildings
+// randomly generate 100 box as buildings
 for (let i = 0; i < 100; i++) {
   let x = Math.random() * 2 * Math.PI;
   let y = Math.random() * 2 * Math.PI;
-  // make building stay together
   let z = Math.random() * 2 * Math.PI;
-
   let buildingHeight = Math.random(0, 1) * 30 + 20 + ground_radius;
-
+  
   let building = new THREE.BoxGeometry(
     Math.random() * 4 + 4,
     buildingHeight * 2,
     Math.random() * 4 + 4
   );
-  
-
-  let buildingMesh = new THREE.Mesh(building, materialOne);
+  let buildingMesh = new THREE.Mesh(building, materialReflective);
   scene.add(buildingMesh);
+
   buildingMesh.position.set(0, 0, 0);
   buildingMesh.rotation.set(x, y, z);
 }
@@ -101,10 +106,11 @@ loop();
 
 
 
-
+// rotate camera and make the camera rotate around the sphere
 function updateCamera() {
   currentAngle += rotateSpeed;
 
+  // trying to figure out how to adjust camera angle
   // if (currentAngle % (Math.PI * 2) > Math.PI) {
   //   camera.up.set(0, -1, 0);
   // } else {
