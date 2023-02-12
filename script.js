@@ -233,7 +233,7 @@ function createGeometry(){
             newBuilding.position.y = ground_radius - 10;
             newBuilding.scale.set(xScale, yScale, zScale);
 
-            pivot.rotation.set(xRotate, yRotate, zRotate);
+            newBuilding.rotation.set(xRotate, yRotate, zRotate);
 
              // adding pivot point to the scene;
             scene.add(pivot);
@@ -253,7 +253,7 @@ function createGeometry(){
 
 function loop() {
   // update camera position and direction
-  updateCamera();
+//   updateCamera();
 
   // render the scene
   renderer.render(scene, camera);
