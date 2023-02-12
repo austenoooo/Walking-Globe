@@ -4,11 +4,15 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 // in order to use an HDR image, we need to first load the RGBELoader
 import { RGBELoader } from "three/addons/loaders/RGBELoader.js";
 
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+
 
 // define movement/ratio parameters
-const ground_radius = 200; // radius of the ground sphere
-const view_length = 20; // the length of the tangent line (viewpoint)
-const height = 2; // height of the camera to the groud surface
+const ground_radius = 400; // radius of the ground sphere
+const view_length = 80; // the length of the tangent line (viewpoint)
+const height = 4; // height of the camera to the groud surface
 let camera_pos = {
   x: ground_radius + height,
   y: 0,
@@ -20,11 +24,11 @@ let camera_look = {
   z: 0,
 }; // camera look at
 let currentAngle = 0; // starting rotation angle
-let rotateSpeed = Math.PI / 4800; // rotation speed
+let rotateSpeed = Math.PI / 4000; // rotation speed
 
 
 let scene, camera, renderer;
-// materail
+// material
 let materialReflective, materialGround;
 // geometry
 let groundMesh;
@@ -43,18 +47,21 @@ function init(){
     );
     
     // for debug
-    camera.position.set(300, 300, 300);
+    camera.position.set(500, 500, 500);
     camera.lookAt(0, 0, 0);
 
     
     // camera.position.set(camera_pos.x, camera_pos.y, camera_pos.z);
     // camera.lookAt(camera_look.x, camera_look.y, camera_look.z);
 
-    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
     // helper functions
+    const axesHelper = new THREE.AxesHelper( 5 );
+    scene.add(axesHelper);
+
     // add orbit control
     let controls = new OrbitControls(camera, renderer.domElement);
 
@@ -107,17 +114,17 @@ function createGeometry(){
 
     buildingNormal.wrapS = THREE.RepeatWrapping;
     buildingNormal.wrapT = THREE.RepeatWrapping;
-    buildingNormal.repeat.set(1, 30);
+    buildingNormal.repeat.set(1, 1);
 
     buildingRoughness.wrapS = THREE.RepeatWrapping;
     buildingRoughness.wrapT = THREE.RepeatWrapping;
-    buildingRoughness.repeat.set(1, 30);
+    buildingRoughness.repeat.set(1, 1);
 
     buildingHeight.wrapS = THREE.RepeatWrapping;
     buildingHeight.wrapT = THREE.RepeatWrapping;
-    buildingHeight.repeat.set(1, 30);
+    buildingHeight.repeat.set(1, 1);
 
-    materialReflective = new THREE.MeshStandardMaterial({
+    materialReflective = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
         roughness: 0,
         metalness: 1,
@@ -149,11 +156,11 @@ function createGeometry(){
         roughness: 0,
         metalness: 1,
         envMap: textureCube,
-        transparent: true,
-        opacity: 0.8,
-        reflectivity: 1,
+        // transparent: true,
+        // opacity: 0.9,
+        reflectivity: 0.5,
         map: groundTexture,
-        specularMap: groundSpec,
+        specularIntensityMap: groundSpec,
     });
 
 
@@ -161,28 +168,82 @@ function createGeometry(){
     groundMesh = new THREE.Mesh(new THREE.SphereGeometry(ground_radius, 64, 32), materialGround);
     scene.add(groundMesh);
     groundMesh.position.set(0, 0, 0);
+    //declared once at the top of your code
+    let axis = new THREE.Vector3(1, 0, 0);//tilted a bit on x
+    //in your update/draw function
+    groundMesh.rotateOnAxis(axis, Math.PI / 2);
 
     // create buildings
     // randomly generate 100 box as buildings
-    for (let i = 0; i < 100; i++) {
-        let x = Math.random() * 2 * Math.PI;
-        let y = Math.random() * 2 * Math.PI;
-        let z = Math.random() * 2 * Math.PI;
-        let buildingHeight = Math.random(0, 1) * 30 + 20 + ground_radius;
+    // for (let i = 0; i < 100; i++) {
+    //     let x = Math.random() * 2 * Math.PI;
+    //     let y = Math.random() * 2 * Math.PI;
+    //     let z = Math.random() * 2 * Math.PI;
+    //     let buildingHeight = Math.random(0, 1) * 30 + 20 + ground_radius;
         
-        let building = new THREE.BoxGeometry(
-            Math.random() * 4 + 4,
-            buildingHeight * 2,
-            Math.random() * 4 + 4
-        );
-        let buildingMesh = new THREE.Mesh(building, materialReflective);
-        scene.add(buildingMesh);
+    //     let building = new THREE.BoxGeometry(
+    //         Math.random() * 4 + 4,
+    //         buildingHeight * 2,
+    //         Math.random() * 4 + 4
+    //     );
+    //     let buildingMesh = new THREE.Mesh(building, materialReflective);
+    //     scene.add(buildingMesh);
 
-        buildingMesh.position.set(0, 0, 0);
-        buildingMesh.rotation.set(x, y, z);
+    //     buildingMesh.position.set(0, 0, 0);
+    //     buildingMesh.rotation.set(x, y, z);
 
-        buildings.push(buildingMesh);
+    //     buildings.push(buildingMesh);
+    // }
+
+
+    // test out building model
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath( 'jsm/libs/draco/gltf/' );
+
+    
+
+    const loader = new GLTFLoader();
+    loader.setDRACOLoader( dracoLoader );
+    for (var n = 0; n < 100; n++){
+        loader.load( './models/building.glb', function (gltf) {
+            const model = gltf.scene;
+            model.traverse((o) => {
+                if (o.isMesh) o.material = materialReflective;
+            });
+
+            // change the origin of each building model to be (0,0,0)
+            let pivot = new THREE.Group();
+            pivot.position.set(0, 0, 0);
+    
+            let xRotate = Math.random() * 2 * Math.PI;
+            let yRotate = Math.random() * 2 * Math.PI;
+            let zRotate = Math.random() * 2 * Math.PI;
+    
+            // scale dimension x0.5-x1.5
+            let xScale = 0.3 + Math.random();
+            let yScale = 1.5 + Math.random();
+            let zScale = 0.3 + Math.random();
+    
+            let newBuilding = model;
+    
+            buildings.push(newBuilding);
+            // make the origin of rotation to be the senter of the sphere
+            pivot.add(newBuilding);
+    
+            newBuilding.position.y = ground_radius - 10;
+            newBuilding.scale.set(xScale, yScale, zScale);
+
+            pivot.rotation.set(xRotate, yRotate, zRotate);
+
+             // adding pivot point to the scene;
+            scene.add(pivot);
+        
+    
+        }, undefined, function (e) {
+            console.error(e);
+        } );
     }
+    
 }
 
 
@@ -207,12 +268,13 @@ function loop() {
 function updateCamera() {
   currentAngle += rotateSpeed;
 
-  // trying to figure out how to adjust camera angle
-  // if (currentAngle % (Math.PI * 2) > Math.PI) {
-  //   camera.up.set(0, -1, 0);
-  // } else {
-  //   camera.up.set(0, 1, 0);
-  // }
+//   trying to figure out how to adjust camera angle
+//   TODO: the view will be flipped upside down for a very short slipt of second for some reasons...
+//   if (currentAngle % (Math.PI * 2) >= Math.PI) {
+//     camera.up.set(0, -1, 0);
+//   } else {
+//     camera.up.set(0, 1, 0);
+//   }
   
   camera.up.set(0, 0, 0);
 
