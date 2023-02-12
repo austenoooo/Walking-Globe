@@ -24,7 +24,7 @@ let camera_look = {
   z: 0,
 }; // camera look at
 let currentAngle = 0; // starting rotation angle
-let rotateSpeed = Math.PI / 4000; // rotation speed
+let rotateSpeed = Math.PI / 2000; // rotation speed
 
 
 let scene, camera, renderer;
